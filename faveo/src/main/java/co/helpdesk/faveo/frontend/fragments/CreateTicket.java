@@ -16,17 +16,14 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.Preference;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.activities.MainActivity;
 import co.helpdesk.faveo.frontend.activities.SplashActivity;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 
 public class CreateTicket extends Fragment {
 

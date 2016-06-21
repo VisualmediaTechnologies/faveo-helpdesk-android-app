@@ -3,26 +3,29 @@ package co.helpdesk.faveo.frontend.activities;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
-
-import co.helpdesk.faveo.Constants;
-import co.helpdesk.faveo.R;
-import co.helpdesk.faveo.backend.api.v1.Helpdesk;
-import co.helpdesk.faveo.backend.database.DatabaseHandler;
-import co.helpdesk.faveo.model.TicketOverview;
-import co.helpdesk.faveo.Helper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import co.helpdesk.faveo.Helper;
+import co.helpdesk.faveo.R;
+import co.helpdesk.faveo.backend.api.v1.Helpdesk;
+import co.helpdesk.faveo.backend.database.DatabaseHandler;
+import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.model.TicketOverview;
+
 
 public class SplashActivity extends AppCompatActivity {
-
+    Snackbar networksnackbar;
     ProgressDialog progressDialog;
     public static String
             keyDepartment = "", valueDepartment = "",
@@ -40,8 +43,22 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading");
-        progressDialog.show();
-        new FetchDependency(this).execute();
+
+        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
+        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            }
+        });
+        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+
+        if (NetworkUtil.getConnectivityStatus(this) != 0) {
+            progressDialog.show();
+            new FetchDependency(this).execute();
+        } else {
+            networksnackbar.show();
+        }
 
     }
 
@@ -58,6 +75,7 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String result) {
+            Log.d("Depen Response code : ", result);
             if (result == null) {
                 Toast.makeText(SplashActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
                 return;
@@ -113,8 +131,10 @@ public class SplashActivity extends AppCompatActivity {
                     keySource += jsonArraySources.getJSONObject(i).getString("id") + ",";
                     valueSource += jsonArraySources.getJSONObject(i).getString("name") + ",";
                 }
+
                 new FetchData(context).execute();
             } catch (JSONException e) {
+                Toast.makeText(SplashActivity.this,"Something went wrong!",Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
         }
@@ -140,9 +160,9 @@ public class SplashActivity extends AppCompatActivity {
                 nextPageURL = jsonObject.getString("next_page_url");
                 String data = jsonObject.getString("data");
                 JSONArray jsonArray = new JSONArray(data);
-                for(int i = 0; i < jsonArray.length(); i++) {
+                for (int i = 0; i < jsonArray.length(); i++) {
                     TicketOverview ticketOverview = Helper.parseTicketOverview(jsonArray, i);
-                    if(ticketOverview != null)
+                    if (ticketOverview != null)
                         databaseHandler.addTicketOverview(ticketOverview);
                 }
             } catch (JSONException e) {
@@ -154,6 +174,7 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String result) {
+            Log.d("Data Response code : ", result);
             if (result == null) {
                 Toast.makeText(SplashActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
                 return;
@@ -162,6 +183,17 @@ public class SplashActivity extends AppCompatActivity {
             intent.putExtra("nextPageURL", nextPageURL);
             startActivity(intent);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (NetworkUtil.getConnectivityStatus(this) == 0) {
+            if (networksnackbar != null)
+                networksnackbar.show();
+        }
+
     }
 
 }

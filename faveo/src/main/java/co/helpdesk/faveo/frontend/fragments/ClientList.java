@@ -16,6 +16,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
@@ -23,13 +30,6 @@ import co.helpdesk.faveo.frontend.activities.ClientDetailActivity;
 import co.helpdesk.faveo.frontend.activities.MainActivity;
 import co.helpdesk.faveo.frontend.adapters.ClientOverviewAdapter;
 import co.helpdesk.faveo.model.ClientOverview;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ClientList extends Fragment implements View.OnClickListener{
     private static final String ARG_PARAM1 = "param1";

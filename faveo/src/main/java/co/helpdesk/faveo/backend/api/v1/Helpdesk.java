@@ -1,6 +1,8 @@
 package co.helpdesk.faveo.backend.api.v1;
 
 
+import android.util.Log;
+
 import co.helpdesk.faveo.Constants;
 import co.helpdesk.faveo.Preference;
 
@@ -318,6 +320,7 @@ public class Helpdesk {
     }
 
     public String getDependency() {
+        Log.d("URL",Constants.URL + "helpdesk/dependency?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
         String result = new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/dependency?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
         if (result != null && result.equals("tokenRefreshed"))
             return new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/dependency?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);

@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Patterns;
 import android.view.View;
@@ -16,14 +18,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import co.helpdesk.faveo.Constants;
 import co.helpdesk.faveo.Preference;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Authenticate;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -35,6 +38,27 @@ public class LoginActivity extends AppCompatActivity {
     int paddingTop, paddingBottom;
     ProgressDialog progressDialogVerifyURL;
     ProgressDialog progressDialogSignIn;
+    Snackbar networksnackbar;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+//        Snackbar networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
+//        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                startActivity(new Intent(Settings.ACTION_SETTINGS));
+//            }
+//        });
+//        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+
+        if (NetworkUtil.getConnectivityStatus(this) == 0) {
+            if (networksnackbar != null)
+                networksnackbar.show();
+        }
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +69,7 @@ public class LoginActivity extends AppCompatActivity {
 
         SharedPreferences prefs = getSharedPreferences(Constants.PREFERENCE, 0);
         Boolean loginComplete = prefs.getBoolean("LOGIN_COMPLETE", false);
-        if(loginComplete) {
+        if (loginComplete) {
             Constants.URL = Preference.getCompanyURL();
             Intent intent = new Intent(LoginActivity.this, SplashActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -60,11 +84,16 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String companyURL = editTextCompanyURL.getText().toString();
                 if (companyURL.trim().length() == 0 || !Patterns.WEB_URL.matcher(companyURL).matches()) {
-                    Toast.makeText(getApplicationContext(), "Please enter a valid url", Toast.LENGTH_LONG).show();
+                    Toast.makeText(v.getContext(), "Please enter a valid url", Toast.LENGTH_LONG).show();
                     return;
                 }
-                progressDialogVerifyURL.show();
-                new VerifyURL(LoginActivity.this, companyURL).execute();
+                if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                    progressDialogVerifyURL.show();
+                    new VerifyURL(LoginActivity.this, companyURL).execute();
+                } else {
+                    //Toast.makeText(v.getContext(), "Turn on Internet Connection!", Toast.LENGTH_LONG).show();
+                    networksnackbar.show();
+                }
             }
         });
 
@@ -81,8 +110,13 @@ public class LoginActivity extends AppCompatActivity {
                         setPasswordErrorStates();
                     return;
                 }
-                progressDialogSignIn.show();
-                new SignIn(LoginActivity.this, username, password).execute();
+
+                if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                    progressDialogSignIn.show();
+                    new SignIn(LoginActivity.this, username, password).execute();
+                }else {
+                    networksnackbar.show();
+                }
             }
         });
 
@@ -93,6 +127,19 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+//        //Internet checking
+//        if (NetworkUtil.getConnectivityStatus(this) == 0) {
+//            networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_INDEFINITE);
+//            networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    startActivity(new Intent(Settings.ACTION_SETTINGS));
+//                }
+//            });
+//            networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+//            networksnackbar.show();
+//        }
 
     }
 
@@ -114,6 +161,7 @@ public class LoginActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             progressDialogVerifyURL.dismiss();
             if (result == null) {
+
                 Toast.makeText(context, "Invalid URL", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -122,8 +170,7 @@ public class LoginActivity extends AppCompatActivity {
                 Preference.setCompanyURL(companyURL + "api/v1/");
                 Constants.URL = Preference.getCompanyURL();
                 viewflipper.showNext();
-            }
-            else
+            } else
                 Toast.makeText(context, "Error verifying URL", Toast.LENGTH_LONG).show();
         }
     }
@@ -145,7 +192,7 @@ public class LoginActivity extends AppCompatActivity {
 
         protected void onPostExecute(String result) {
             progressDialogSignIn.dismiss();
-            if(result == null) {
+            if (result == null) {
                 Toast.makeText(LoginActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -199,6 +246,9 @@ public class LoginActivity extends AppCompatActivity {
         progressDialogSignIn = new ProgressDialog(this);
         progressDialogSignIn.setMessage("Signing in");
         editTextCompanyURL = (EditText) findViewById(R.id.editText_company_url);
+        if (editTextCompanyURL != null) {
+            editTextCompanyURL.setText("http://faveohelpdesk.co.in/demo1/public/");
+        }
         viewflipper = (ViewFlipper) findViewById(R.id.viewFlipper);
         buttonVerifyURL = (ImageButton) findViewById(R.id.imageButton_verify_url);
         textViewFieldError = (TextView) findViewById(R.id.textView_field_error);
@@ -208,6 +258,15 @@ public class LoginActivity extends AppCompatActivity {
         buttonSignIn = (Button) findViewById(R.id.button_sign_in);
         paddingTop = editTextUsername.getPaddingTop();
         paddingBottom = editTextUsername.getPaddingBottom();
+
+        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
+        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            }
+        });
+        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
     }
 
 }

@@ -6,7 +6,7 @@
     android:fillViewport="true"
     android:scrollbars="none"
     android:background="@color/colorAccent"
-    android:padding="24dp"
+    android:padding="16dp"
     android:overScrollMode="never">
 
     <LinearLayout
@@ -88,7 +88,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:layout_marginTop="24dp"
             android:text="STATUS"
             android:textStyle="bold"
             android:alpha="0.3"/>

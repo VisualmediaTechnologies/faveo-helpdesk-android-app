@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -26,31 +26,31 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
+
 import co.helpdesk.faveo.Constants;
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.fragments.ticketDetail.Conversation;
 import co.helpdesk.faveo.frontend.fragments.ticketDetail.Detail;
+import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
 import co.helpdesk.faveo.model.TicketThread;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-
 import io.codetail.animation.SupportAnimator;
 import io.codetail.animation.ViewAnimationUtils;
 
 
 public class TicketDetailActivity extends AppCompatActivity implements
         Conversation.OnFragmentInteractionListener,
-        Detail.OnFragmentInteractionListener{
+        Detail.OnFragmentInteractionListener {
 
+    Snackbar networksnackbar;
     ViewPager viewPager;
     ViewPagerAdapter adapter;
     Conversation fragmentConversation;
@@ -97,6 +97,16 @@ public class TicketDetailActivity extends AppCompatActivity implements
         buttonCreate = (Button) findViewById(R.id.button_create);
         buttonSend = (Button) findViewById(R.id.button_send);
 
+        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
+        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            }
+        });
+        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+
+
         buttonCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -113,11 +123,14 @@ public class TicketDetailActivity extends AppCompatActivity implements
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    new CreateInternalNote(Integer.parseInt(ticketID), Integer.parseInt(userID), note).execute();
-                    progressDialog.setMessage("Creating note");
-                    progressDialog.show();
-                }
-                else
+
+                    if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                        new CreateInternalNote(Integer.parseInt(ticketID), Integer.parseInt(userID), note).execute();
+                        progressDialog.setMessage("Creating note");
+                        progressDialog.show();
+                    } else networksnackbar.show();
+
+                } else
                     Toast.makeText(TicketDetailActivity.this, "Wrong userID", Toast.LENGTH_LONG).show();
             }
         });
@@ -151,11 +164,13 @@ public class TicketDetailActivity extends AppCompatActivity implements
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    new ReplyTicket(Integer.parseInt(ticketID), cc, replyMessage).execute();
-                    progressDialog.setMessage("Sending message");
-                    progressDialog.show();
-                }
-                else
+
+                    if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                        new ReplyTicket(Integer.parseInt(ticketID), cc, replyMessage).execute();
+                        progressDialog.setMessage("Sending message");
+                        progressDialog.show();
+                    } else networksnackbar.show();
+                } else
                     Toast.makeText(TicketDetailActivity.this, "Wrong userID", Toast.LENGTH_LONG).show();
             }
         });
@@ -191,8 +206,7 @@ public class TicketDetailActivity extends AppCompatActivity implements
                     fabExpanded = true;
                     fabAdd.hide();
                     enterReveal("Reply");
-                }
-                else {
+                } else {
                     cx = (int) fabAdd.getX() + dpToPx(40);
                     cy = (int) fabAdd.getY();
                     fabExpanded = true;
@@ -276,17 +290,19 @@ public class TicketDetailActivity extends AppCompatActivity implements
                 String isReply = "true";
                 try {
                     isReply = res.getString("is_reply");
-                } catch(Exception e) {}
+                } catch (Exception e) {
+                }
                 ticketThread = new TicketThread(clientPicture, clientName, messageTime, messageTitle, message, isReply);
-                if(fragmentConversation != null) {
+                if (fragmentConversation != null) {
                     exitReveal();
                     fragmentConversation.addThreadAndUpdate(ticketThread);
                 }
             } catch (JSONException e) {
-                if(fragmentConversation != null) {
+                if (fragmentConversation != null) {
                     exitReveal();
                 }
                 e.printStackTrace();
+                Toast.makeText(TicketDetailActivity.this, "Unexpected Error ", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -380,8 +396,7 @@ public class TicketDetailActivity extends AppCompatActivity implements
             myView.findViewById(R.id.section_reply).setVisibility(View.VISIBLE);
             myView.findViewById(R.id.section_internal_note).setVisibility(View.GONE);
             overlay.setVisibility(View.VISIBLE);
-        }
-        else {
+        } else {
             myView.setVisibility(View.VISIBLE);
             myView.findViewById(R.id.section_reply).setVisibility(View.GONE);
             myView.findViewById(R.id.section_internal_note).setVisibility(View.VISIBLE);
@@ -435,8 +450,20 @@ public class TicketDetailActivity extends AppCompatActivity implements
 
     @Override
     public void onBackPressed() {
-        if(fabExpanded)
+        if (fabExpanded)
             exitReveal();
         else super.onBackPressed();
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (NetworkUtil.getConnectivityStatus(this) == 0) {
+            if (networksnackbar != null)
+                networksnackbar.show();
+        }
+
     }
 }

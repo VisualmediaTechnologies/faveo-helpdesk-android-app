@@ -2,19 +2,23 @@ package co.helpdesk.faveo.frontend.drawers;
 /**
  * Created by Sumit
  */
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import co.helpdesk.faveo.Constants;
 import co.helpdesk.faveo.FaveoApplication;
@@ -24,15 +28,11 @@ import co.helpdesk.faveo.frontend.activities.MainActivity;
 import co.helpdesk.faveo.frontend.fragments.About;
 import co.helpdesk.faveo.frontend.fragments.ClientList;
 import co.helpdesk.faveo.frontend.fragments.CreateTicket;
-import co.helpdesk.faveo.frontend.fragments.Settings;
 import co.helpdesk.faveo.frontend.fragments.tickets.ClosedTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.InboxTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.MyTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.TrashTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.UnassignedTickets;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class FragmentDrawer extends Fragment implements View.OnClickListener  {
 
@@ -81,7 +81,7 @@ public class FragmentDrawer extends Fragment implements View.OnClickListener  {
         layout.findViewById(R.id.closed_tickets).setOnClickListener(this);
         layout.findViewById(R.id.trash_tickets).setOnClickListener(this);
         layout.findViewById(R.id.client_list).setOnClickListener(this);
-        layout.findViewById(R.id.settings).setOnClickListener(this);
+       // layout.findViewById(R.id.settings).setOnClickListener(this);
         layout.findViewById(R.id.about).setOnClickListener(this);
         layout.findViewById(R.id.logout).setOnClickListener(this);
         return layout;
@@ -168,12 +168,12 @@ public class FragmentDrawer extends Fragment implements View.OnClickListener  {
                 if (fragment == null)
                     fragment = new ClientList();
                 break;
-            case R.id.settings:
-                title = getString(R.string.settings);
-                fragment = getActivity().getSupportFragmentManager().findFragmentByTag(title);
-                if (fragment == null)
-                    fragment = new Settings();
-                break;
+//            case R.id.settings:
+//                title = getString(R.string.settings);
+//                fragment = getActivity().getSupportFragmentManager().findFragmentByTag(title);
+//                if (fragment == null)
+//                    fragment = new Settings();
+//                break;
             case R.id.about:
                 title = getString(R.string.about);
                 fragment = getActivity().getSupportFragmentManager().findFragmentByTag(title);
@@ -182,7 +182,8 @@ public class FragmentDrawer extends Fragment implements View.OnClickListener  {
                 break;
             case R.id.logout:
                 FaveoApplication.getInstance().clearApplicationData();
-                getActivity().getSharedPreferences(Constants.PREFERENCE, getActivity().MODE_PRIVATE).edit().clear().commit();
+               // getActivity();
+                getActivity().getSharedPreferences(Constants.PREFERENCE, Context.MODE_PRIVATE).edit().clear().commit();
                 Intent intent = new Intent(getActivity(), LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -195,7 +196,7 @@ public class FragmentDrawer extends Fragment implements View.OnClickListener  {
             fragmentTransaction.addToBackStack(null);
             fragmentTransaction.commit();
             ((MainActivity) getActivity()).setActionBarTitle(title);
-            mDrawerLayout.closeDrawer(Gravity.LEFT);
+            mDrawerLayout.closeDrawer(GravityCompat.START);
         }
     }
 

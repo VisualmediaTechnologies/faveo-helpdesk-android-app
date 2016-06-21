@@ -3,7 +3,6 @@ package co.helpdesk.faveo.frontend.fragments.ticketDetail;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,15 +18,14 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import co.helpdesk.faveo.Constants;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.activities.SplashActivity;
 import co.helpdesk.faveo.frontend.activities.TicketDetailActivity;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class Detail extends Fragment {
     private static final String ARG_PARAM1 = "param1";

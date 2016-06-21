@@ -5,13 +5,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -19,19 +21,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import co.helpdesk.faveo.R;
-import co.helpdesk.faveo.backend.api.v1.Helpdesk;
-import co.helpdesk.faveo.frontend.fragments.client.ClosedTickets;
-import co.helpdesk.faveo.frontend.fragments.client.OpenTickets;
-import co.helpdesk.faveo.model.TicketGlimpse;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import co.helpdesk.faveo.R;
+import co.helpdesk.faveo.backend.api.v1.Helpdesk;
+import co.helpdesk.faveo.frontend.fragments.client.ClosedTickets;
+import co.helpdesk.faveo.frontend.fragments.client.OpenTickets;
+import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.model.TicketGlimpse;
 
 
 public class ClientDetailActivity extends AppCompatActivity implements
@@ -47,6 +50,7 @@ public class ClientDetailActivity extends AppCompatActivity implements
     String clientID, clientName;
     List<TicketGlimpse> listTicketGlimpse;
     ProgressDialog progressDialog;
+    Snackbar networksnackbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,18 +87,18 @@ public class ClientDetailActivity extends AppCompatActivity implements
                     .placeholder(R.drawable.default_pic)
                     .error(R.drawable.default_pic)
                     .into(imageViewClientPicture);
-
-        progressDialog.show();
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                new FetchClientTickets(ClientDetailActivity.this).execute();
-            }
-        }, 3000);
+        if (NetworkUtil.getConnectivityStatus(this) != 0) {
+            progressDialog.show();
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    new FetchClientTickets(ClientDetailActivity.this).execute();
+                }
+            }, 3000);
+        } else networksnackbar.show();
 
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-
         setupViewPager();
         tabLayout.setupWithViewPager(viewPager);
         tabLayout.setOnTabSelectedListener(onTabSelectedListener);
@@ -117,7 +121,7 @@ public class ClientDetailActivity extends AppCompatActivity implements
                 return null;
             try {
                 JSONArray jsonArray = new JSONArray(result);
-                for(int i = 0; i < jsonArray.length(); i++) {
+                for (int i = 0; i < jsonArray.length(); i++) {
                     int ticketID = Integer.parseInt(jsonArray.getJSONObject(i).getString("id"));
                     boolean isOpen = true;
                     String ticketNumber = jsonArray.getJSONObject(i).getString("ticket_number");
@@ -134,6 +138,7 @@ public class ClientDetailActivity extends AppCompatActivity implements
                     listTicketGlimpse.add(new TicketGlimpse(ticketID, ticketNumber, ticketSubject, isOpen));
                 }
             } catch (JSONException e) {
+                Toast.makeText(ClientDetailActivity.this, "Unexpected Error", Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
             return "success";
@@ -235,6 +240,27 @@ public class ClientDetailActivity extends AppCompatActivity implements
         textViewClientCompany = (TextView) findViewById(R.id.textView_client_company);
         textViewClientStatus = (TextView) findViewById(R.id.textView_client_status);
         viewPager = (ViewPager) findViewById(R.id.viewpager);
+
+        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
+        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            }
+        });
+        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (NetworkUtil.getConnectivityStatus(this) == 0) {
+            if (networksnackbar != null)
+                networksnackbar.show();
+        }
+
     }
 
 }
