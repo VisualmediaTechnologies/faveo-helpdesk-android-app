@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -35,12 +36,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import co.helpdesk.faveo.Constants;
+import co.helpdesk.faveo.FaveoApplication;
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.fragments.ticketDetail.Conversation;
 import co.helpdesk.faveo.frontend.fragments.ticketDetail.Detail;
-import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 import co.helpdesk.faveo.model.TicketThread;
 import io.codetail.animation.SupportAnimator;
 import io.codetail.animation.ViewAnimationUtils;
@@ -48,9 +50,8 @@ import io.codetail.animation.ViewAnimationUtils;
 
 public class TicketDetailActivity extends AppCompatActivity implements
         Conversation.OnFragmentInteractionListener,
-        Detail.OnFragmentInteractionListener {
+        Detail.OnFragmentInteractionListener, InternetReceiver.InternetReceiverListener {
 
-    Snackbar networksnackbar;
     ViewPager viewPager;
     ViewPagerAdapter adapter;
     Conversation fragmentConversation;
@@ -97,16 +98,6 @@ public class TicketDetailActivity extends AppCompatActivity implements
         buttonCreate = (Button) findViewById(R.id.button_create);
         buttonSend = (Button) findViewById(R.id.button_send);
 
-        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
-        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(Settings.ACTION_SETTINGS));
-            }
-        });
-        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
-
-
         buttonCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -124,11 +115,11 @@ public class TicketDetailActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
 
-                    if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
-                        new CreateInternalNote(Integer.parseInt(ticketID), Integer.parseInt(userID), note).execute();
-                        progressDialog.setMessage("Creating note");
-                        progressDialog.show();
-                    } else networksnackbar.show();
+
+                    new CreateInternalNote(Integer.parseInt(ticketID), Integer.parseInt(userID), note).execute();
+                    progressDialog.setMessage("Creating note");
+                    progressDialog.show();
+
 
                 } else
                     Toast.makeText(TicketDetailActivity.this, "Wrong userID", Toast.LENGTH_LONG).show();
@@ -165,11 +156,11 @@ public class TicketDetailActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
 
-                    if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
-                        new ReplyTicket(Integer.parseInt(ticketID), cc, replyMessage).execute();
-                        progressDialog.setMessage("Sending message");
-                        progressDialog.show();
-                    } else networksnackbar.show();
+
+                    new ReplyTicket(Integer.parseInt(ticketID), cc, replyMessage).execute();
+                    progressDialog.setMessage("Sending message");
+                    progressDialog.show();
+
                 } else
                     Toast.makeText(TicketDetailActivity.this, "Wrong userID", Toast.LENGTH_LONG).show();
             }
@@ -455,15 +446,61 @@ public class TicketDetailActivity extends AppCompatActivity implements
         else super.onBackPressed();
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();
+        // register connection status listener
+        FaveoApplication.getInstance().setInternetListener(this);
+        checkConnection();
+    }
 
-        if (NetworkUtil.getConnectivityStatus(this) == 0) {
-            if (networksnackbar != null)
-                networksnackbar.show();
+    private void checkConnection() {
+        boolean isConnected = InternetReceiver.isConnected();
+        showSnackIfNoInternet(isConnected);
+    }
+
+    private void showSnackIfNoInternet(boolean isConnected) {
+        if (!isConnected) {
+            final Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Sorry! Not connected to internet", Snackbar.LENGTH_INDEFINITE);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.RED);
+            snackbar.setAction("X", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.show();
         }
 
+    }
+
+    private void showSnack(boolean isConnected) {
+
+        if (isConnected) {
+
+            Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Connected to Internet", Snackbar.LENGTH_LONG);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.WHITE);
+            snackbar.show();
+        } else {
+            showSnackIfNoInternet(false);
+        }
+
+    }
+
+    /**
+     * Callback will be triggered when there is change in
+     * network connection
+     */
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        showSnack(isConnected);
     }
 }

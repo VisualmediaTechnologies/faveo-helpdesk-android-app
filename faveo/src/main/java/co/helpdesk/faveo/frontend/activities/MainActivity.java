@@ -2,6 +2,7 @@ package co.helpdesk.faveo.frontend.activities;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -14,6 +15,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.TextView;
 
+import co.helpdesk.faveo.FaveoApplication;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.frontend.drawers.FragmentDrawer;
 import co.helpdesk.faveo.frontend.fragments.About;
@@ -25,7 +27,7 @@ import co.helpdesk.faveo.frontend.fragments.tickets.InboxTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.MyTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.TrashTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.UnassignedTickets;
-import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 
 
 public class MainActivity extends AppCompatActivity implements FragmentDrawer.FragmentDrawerListener,
@@ -37,9 +39,8 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         About.OnFragmentInteractionListener,
         ClientList.OnFragmentInteractionListener,
         CreateTicket.OnFragmentInteractionListener,
-        Settings.OnFragmentInteractionListener {
+        Settings.OnFragmentInteractionListener,InternetReceiver.InternetReceiverListener{
 
-    Snackbar networksnackbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,15 +73,6 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         editor.putBoolean("LOGIN_COMPLETE", true);
         editor.apply();
 
-        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
-        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
-            }
-        });
-        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
-        networksnackbar.show();
     }
 
 
@@ -129,12 +121,59 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
     @Override
     protected void onResume() {
         super.onResume();
+        // register connection status listener
+        FaveoApplication.getInstance().setInternetListener(this);
+        checkConnection();
+    }
 
-        if (NetworkUtil.getConnectivityStatus(this) == 0) {
-            if (networksnackbar != null)
-                networksnackbar.show();
+    private void checkConnection() {
+        boolean isConnected = InternetReceiver.isConnected();
+        showSnackIfNoInternet(isConnected);
+    }
+
+    private void showSnackIfNoInternet(boolean isConnected) {
+        if (!isConnected) {
+            final Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Sorry! Not connected to internet", Snackbar.LENGTH_INDEFINITE);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.RED);
+            snackbar.setAction("X", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.show();
         }
 
+    }
+
+    private void showSnack(boolean isConnected) {
+
+        if (isConnected) {
+
+            Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Connected to Internet", Snackbar.LENGTH_LONG);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.WHITE);
+            snackbar.show();
+        } else {
+            showSnackIfNoInternet(false);
+        }
+
+    }
+
+    /**
+     * Callback will be triggered when there is change in
+     * network connection
+     */
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        showSnack(isConnected);
     }
 
 }

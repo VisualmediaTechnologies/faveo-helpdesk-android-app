@@ -4,11 +4,12 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -22,13 +23,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import co.helpdesk.faveo.Constants;
+import co.helpdesk.faveo.FaveoApplication;
 import co.helpdesk.faveo.Preference;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Authenticate;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
-import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity implements InternetReceiver.InternetReceiverListener {
 
     TextView textViewFieldError, textViewForgotPassword;
     EditText editTextCompanyURL, editTextUsername, editTextPassword;
@@ -38,27 +40,7 @@ public class LoginActivity extends AppCompatActivity {
     int paddingTop, paddingBottom;
     ProgressDialog progressDialogVerifyURL;
     ProgressDialog progressDialogSignIn;
-    Snackbar networksnackbar;
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-//        Snackbar networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
-//        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                startActivity(new Intent(Settings.ACTION_SETTINGS));
-//            }
-//        });
-//        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
-
-        if (NetworkUtil.getConnectivityStatus(this) == 0) {
-            if (networksnackbar != null)
-                networksnackbar.show();
-        }
-
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,13 +69,11 @@ public class LoginActivity extends AppCompatActivity {
                     Toast.makeText(v.getContext(), "Please enter a valid url", Toast.LENGTH_LONG).show();
                     return;
                 }
-                if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                if (InternetReceiver.isConnected()) {
                     progressDialogVerifyURL.show();
                     new VerifyURL(LoginActivity.this, companyURL).execute();
-                } else {
-                    //Toast.makeText(v.getContext(), "Turn on Internet Connection!", Toast.LENGTH_LONG).show();
-                    networksnackbar.show();
-                }
+                } else
+                    Toast.makeText(v.getContext(), "Oops! No internet", Toast.LENGTH_LONG).show();
             }
         });
 
@@ -110,13 +90,11 @@ public class LoginActivity extends AppCompatActivity {
                         setPasswordErrorStates();
                     return;
                 }
-
-                if (NetworkUtil.getConnectivityStatus(v.getContext()) != 0) {
+                if (InternetReceiver.isConnected()) {
                     progressDialogSignIn.show();
                     new SignIn(LoginActivity.this, username, password).execute();
-                }else {
-                    networksnackbar.show();
-                }
+                } else
+                    Toast.makeText(v.getContext(), "Oops! No internet", Toast.LENGTH_LONG).show();
             }
         });
 
@@ -128,20 +106,8 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-//        //Internet checking
-//        if (NetworkUtil.getConnectivityStatus(this) == 0) {
-//            networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_INDEFINITE);
-//            networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    startActivity(new Intent(Settings.ACTION_SETTINGS));
-//                }
-//            });
-//            networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
-//            networksnackbar.show();
-//        }
-
     }
+
 
     public class VerifyURL extends AsyncTask<String, Void, String> {
         Context context;
@@ -191,10 +157,22 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String result) {
+            Log.d("Response login", result);
             progressDialogSignIn.dismiss();
             if (result == null) {
                 Toast.makeText(LoginActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
                 return;
+            } else {
+                try {
+                    JSONObject jsonObject = new JSONObject(result);
+                    String error = jsonObject.getString("status_code");
+                    if (error.equals("401")) {
+                        Toast.makeText(LoginActivity.this, "Wrong Credentials", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
             try {
                 JSONObject jsonObject = new JSONObject(result);
@@ -247,7 +225,7 @@ public class LoginActivity extends AppCompatActivity {
         progressDialogSignIn.setMessage("Signing in");
         editTextCompanyURL = (EditText) findViewById(R.id.editText_company_url);
         if (editTextCompanyURL != null) {
-            editTextCompanyURL.setText("http://faveohelpdesk.co.in/demo1/public/");
+            editTextCompanyURL.setText("http://ladybirdweb.com/support/");
         }
         viewflipper = (ViewFlipper) findViewById(R.id.viewFlipper);
         buttonVerifyURL = (ImageButton) findViewById(R.id.imageButton_verify_url);
@@ -259,14 +237,64 @@ public class LoginActivity extends AppCompatActivity {
         paddingTop = editTextUsername.getPaddingTop();
         paddingBottom = editTextUsername.getPaddingBottom();
 
-        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
-        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(Settings.ACTION_SETTINGS));
-            }
-        });
-        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // register connection status listener
+        FaveoApplication.getInstance().setInternetListener(this);
+        checkConnection();
+    }
+
+    private void checkConnection() {
+        boolean isConnected = InternetReceiver.isConnected();
+        showSnackIfNoInternet(isConnected);
+    }
+
+    private void showSnackIfNoInternet(boolean isConnected) {
+        if (!isConnected) {
+            final Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Sorry! Not connected to internet", Snackbar.LENGTH_INDEFINITE);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.RED);
+            snackbar.setAction("X", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.show();
+        }
+
+    }
+
+    private void showSnack(boolean isConnected) {
+
+        if (isConnected) {
+
+            Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Connected to Internet", Snackbar.LENGTH_LONG);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.WHITE);
+            snackbar.show();
+        } else {
+            showSnackIfNoInternet(false);
+        }
+
+    }
+
+    /**
+     * Callback will be triggered when there is change in
+     * network connection
+     */
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        showSnack(isConnected);
     }
 
 }

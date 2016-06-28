@@ -3,9 +3,12 @@ package co.helpdesk.faveo;
 /**
  * Created by sumit on 3/13/2016.
  */
+
 import java.io.File;
 
 import android.app.Application;
+
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 
 public class FaveoApplication extends Application {
     private static FaveoApplication instance;
@@ -16,8 +19,12 @@ public class FaveoApplication extends Application {
         instance = this;
     }
 
-    public static FaveoApplication getInstance() {
+    public static synchronized FaveoApplication getInstance() {
         return instance;
+    }
+
+    public void setInternetListener(InternetReceiver.InternetReceiverListener listener) {
+        InternetReceiver.internetReceiverListener = listener;
     }
 
     public void clearApplicationData() {

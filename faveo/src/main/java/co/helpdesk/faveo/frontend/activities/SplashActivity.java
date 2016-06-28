@@ -3,6 +3,7 @@ package co.helpdesk.faveo.frontend.activities;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -10,22 +11,24 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import co.helpdesk.faveo.FaveoApplication;
 import co.helpdesk.faveo.Helper;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.backend.database.DatabaseHandler;
-import co.helpdesk.faveo.frontend.receivers.NetworkUtil;
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 import co.helpdesk.faveo.model.TicketOverview;
 
 
-public class SplashActivity extends AppCompatActivity {
-    Snackbar networksnackbar;
+public class SplashActivity extends AppCompatActivity implements InternetReceiver.InternetReceiverListener {
+
     ProgressDialog progressDialog;
     public static String
             keyDepartment = "", valueDepartment = "",
@@ -43,23 +46,10 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading");
-
-        networksnackbar = Snackbar.make(findViewById(android.R.id.content), "No internet connection!", Snackbar.LENGTH_LONG);
-        networksnackbar.setAction("SETTINGS", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(Settings.ACTION_SETTINGS));
-            }
-        });
-        networksnackbar.setActionTextColor(getResources().getColor(R.color.blue_300));
-
-        if (NetworkUtil.getConnectivityStatus(this) != 0) {
+        if (InternetReceiver.isConnected()) {
             progressDialog.show();
             new FetchDependency(this).execute();
-        } else {
-            networksnackbar.show();
-        }
-
+        } else Toast.makeText(this, "Oops! No internet", Toast.LENGTH_LONG).show();
     }
 
     public class FetchDependency extends AsyncTask<String, Void, String> {
@@ -75,8 +65,9 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String result) {
-            Log.d("Depen Response code : ", result);
+            Log.d("Depen Response code : ", result + "");
             if (result == null) {
+
                 Toast.makeText(SplashActivity.this, "Something went wrong", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -133,8 +124,9 @@ public class SplashActivity extends AppCompatActivity {
                 }
 
                 new FetchData(context).execute();
+
             } catch (JSONException e) {
-                Toast.makeText(SplashActivity.this,"Something went wrong!",Toast.LENGTH_LONG).show();
+                Toast.makeText(SplashActivity.this, "Error", Toast.LENGTH_LONG).show();
                 e.printStackTrace();
             }
         }
@@ -188,12 +180,59 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // register connection status listener
+        FaveoApplication.getInstance().setInternetListener(this);
+        checkConnection();
+    }
 
-        if (NetworkUtil.getConnectivityStatus(this) == 0) {
-            if (networksnackbar != null)
-                networksnackbar.show();
+    private void checkConnection() {
+        boolean isConnected = InternetReceiver.isConnected();
+        showSnackIfNoInternet(isConnected);
+    }
+
+    private void showSnackIfNoInternet(boolean isConnected) {
+        if (!isConnected) {
+            final Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Sorry! Not connected to internet", Snackbar.LENGTH_INDEFINITE);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.RED);
+            snackbar.setAction("X", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.show();
         }
 
+    }
+
+    private void showSnack(boolean isConnected) {
+
+        if (isConnected) {
+
+            Snackbar snackbar = Snackbar
+                    .make(findViewById(android.R.id.content), "Connected to Internet", Snackbar.LENGTH_LONG);
+
+            View sbView = snackbar.getView();
+            TextView textView = (TextView) sbView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setTextColor(Color.WHITE);
+            snackbar.show();
+        } else {
+            showSnackIfNoInternet(false);
+        }
+
+    }
+
+    /**
+     * Callback will be triggered when there is change in
+     * network connection
+     */
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        showSnack(isConnected);
     }
 
 }

@@ -29,9 +29,10 @@ import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.activities.ClientDetailActivity;
 import co.helpdesk.faveo.frontend.activities.MainActivity;
 import co.helpdesk.faveo.frontend.adapters.ClientOverviewAdapter;
+import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
 import co.helpdesk.faveo.model.ClientOverview;
 
-public class ClientList extends Fragment implements View.OnClickListener{
+public class ClientList extends Fragment implements View.OnClickListener {
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
@@ -86,15 +87,23 @@ public class ClientList extends Fragment implements View.OnClickListener{
             recyclerView.setLayoutManager(linearLayoutManager);
             progressDialog = new ProgressDialog(getContext());
             progressDialog.setMessage("Fetching clients");
-            progressDialog.show();
-            new FetchClients(getActivity()).execute();
+            if (InternetReceiver.isConnected()) {
+                progressDialog.show();
+                new FetchClients(getActivity()).execute();
+            } else
+                Toast.makeText(getActivity(), "Oops! No internet", Toast.LENGTH_LONG).show();
+
             swipeRefresh = (SwipeRefreshLayout) rootView.findViewById(R.id.swipeRefresh);
             swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override
                 public void onRefresh() {
-                    new FetchClients(getActivity()).execute();
+                    if (InternetReceiver.isConnected()) {
+                        new FetchClients(getActivity()).execute();
+                    } else
+                        Toast.makeText(getActivity(), "Oops! No internet", Toast.LENGTH_LONG).show();
                 }
             });
+
         }
         ((MainActivity) getActivity()).setActionBarTitle("Client list");
         return rootView;
@@ -120,9 +129,9 @@ public class ClientList extends Fragment implements View.OnClickListener{
                 data = jsonObject.getString("data");
                 nextPageURL = jsonObject.getString("next_page_url");
                 JSONArray jsonArray = new JSONArray(data);
-                for(int i = 0; i < jsonArray.length(); i++) {
+                for (int i = 0; i < jsonArray.length(); i++) {
                     ClientOverview clientOverview = Helper.parseClientOverview(jsonArray, i);
-                    if(clientOverview != null)
+                    if (clientOverview != null)
                         clientOverviewList.add(clientOverview);
                 }
             } catch (JSONException e) {
@@ -191,9 +200,9 @@ public class ClientList extends Fragment implements View.OnClickListener{
                 data = jsonObject.getString("data");
                 nextPageURL = jsonObject.getString("next_page_url");
                 JSONArray jsonArray = new JSONArray(data);
-                for(int i = 0; i < jsonArray.length(); i++) {
+                for (int i = 0; i < jsonArray.length(); i++) {
                     ClientOverview clientOverview = Helper.parseClientOverview(jsonArray, i);
-                    if(clientOverview != null)
+                    if (clientOverview != null)
                         clientOverviewList.add(clientOverview);
                 }
             } catch (JSONException e) {
