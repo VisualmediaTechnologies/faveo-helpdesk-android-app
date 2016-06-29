@@ -133,6 +133,7 @@ public class CreateTicket extends Fragment {
                             }
 
                             new CreateNewTicket(Integer.parseInt(Preference.getUserID()), subject, message, helpTopic, SLAPlans, priority, assignTo).execute();
+
                         } else
                             Toast.makeText(v.getContext(), "Oops! No internet", Toast.LENGTH_LONG).show();
                     }

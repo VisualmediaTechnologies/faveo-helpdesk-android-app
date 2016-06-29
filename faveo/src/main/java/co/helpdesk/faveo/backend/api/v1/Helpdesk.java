@@ -289,10 +289,10 @@ public class Helpdesk {
     }
 
     public String getTrashTickets() {
-        Log.d("TrashTicketsAPI",Constants.URL + "helpdesk/inbox?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
-        String result = new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/inbox?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
+        Log.d("TrashTicketsAPI",Constants.URL + "helpdesk/trash?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
+        String result = new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/trash?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
         if (result != null && result.equals("tokenRefreshed"))
-            return new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/inbox?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
+            return new HTTPConnection().HTTPResponseGet(Constants.URL + "helpdesk/trash?api_key=" + apiKey + "&ip=" + IP + "&token=" + token);
         return result;
     }
 

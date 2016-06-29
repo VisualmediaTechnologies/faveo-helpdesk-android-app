@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         About.OnFragmentInteractionListener,
         ClientList.OnFragmentInteractionListener,
         CreateTicket.OnFragmentInteractionListener,
-        Settings.OnFragmentInteractionListener,InternetReceiver.InternetReceiverListener{
+        Settings.OnFragmentInteractionListener, InternetReceiver.InternetReceiverListener {
 
 
     @Override
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         TextView mTitle = (TextView) toolbarTop.findViewById(R.id.title);
         mTitle.setText(title.toUpperCase());
 
-        final View mCreateTicket = toolbarTop.findViewById(R.id.button_create_ticket);
+        View mCreateTicket = toolbarTop.findViewById(R.id.button_create_ticket);
         switch (title) {
             case "Inbox":
             case "My tickets":
@@ -101,9 +101,9 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         mCreateTicket.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = getSupportFragmentManager().findFragmentByTag(getString(R.string.create_ticket));
-                if (fragment == null)
-                    fragment = new CreateTicket();
+                //Fragment fragment = getSupportFragmentManager().findFragmentByTag(getString(R.string.create_ticket));
+                // if (fragment == null)
+                Fragment fragment = new CreateTicket();
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
                 fragmentTransaction.replace(R.id.container_body, fragment, title);
