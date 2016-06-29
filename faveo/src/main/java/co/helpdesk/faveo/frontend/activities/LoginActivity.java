@@ -225,7 +225,7 @@ public class LoginActivity extends AppCompatActivity implements InternetReceiver
         progressDialogSignIn.setMessage("Signing in");
         editTextCompanyURL = (EditText) findViewById(R.id.editText_company_url);
         if (editTextCompanyURL != null) {
-            editTextCompanyURL.setText("http://ladybirdweb.com/support/");
+            editTextCompanyURL.setText("http://");
         }
         viewflipper = (ViewFlipper) findViewById(R.id.viewFlipper);
         buttonVerifyURL = (ImageButton) findViewById(R.id.imageButton_verify_url);

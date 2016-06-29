@@ -11,7 +11,7 @@ public class Preference {
     public static Context applicationContext;
 
     public Preference(Context applicationContext) {
-        this.applicationContext = applicationContext;
+        Preference.applicationContext = applicationContext;
     }
 
     public static String getToken() {
