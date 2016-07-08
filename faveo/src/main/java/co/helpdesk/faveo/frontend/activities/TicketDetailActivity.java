@@ -20,6 +20,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
@@ -76,8 +77,11 @@ public class TicketDetailActivity extends AppCompatActivity implements
 
         Toolbar mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
         ticketID = getIntent().getStringExtra("TICKET_ID");
         ticketNumber = getIntent().getStringExtra("TICKET_NUMBER");
         ticketOpenedBy = getIntent().getStringExtra("TICKET_OPENED_BY");
@@ -115,11 +119,9 @@ public class TicketDetailActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
 
-
                     new CreateInternalNote(Integer.parseInt(ticketID), Integer.parseInt(userID), note).execute();
                     progressDialog.setMessage("Creating note");
                     progressDialog.show();
-
 
                 } else
                     Toast.makeText(TicketDetailActivity.this, "Wrong userID", Toast.LENGTH_LONG).show();
@@ -156,7 +158,6 @@ public class TicketDetailActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
 
-
                     new ReplyTicket(Integer.parseInt(ticketID), cc, replyMessage).execute();
                     progressDialog.setMessage("Sending message");
                     progressDialog.show();
@@ -182,6 +183,16 @@ public class TicketDetailActivity extends AppCompatActivity implements
             }
         });
 
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // handle arrow click here
+        if (item.getItemId() == android.R.id.home) {
+            finish(); // close this activity and return to preview activity (if there is any)
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     private void getCreateRequest() {

@@ -19,6 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
+import com.crashlytics.android.Crashlytics;
+import com.crashlytics.android.core.CrashlyticsCore;
+import com.crashlytics.android.core.CrashlyticsListener;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,6 +33,7 @@ import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.backend.api.v1.Authenticate;
 import co.helpdesk.faveo.backend.api.v1.Helpdesk;
 import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
+import io.fabric.sdk.android.Fabric;
 
 public class LoginActivity extends AppCompatActivity implements InternetReceiver.InternetReceiverListener {
 

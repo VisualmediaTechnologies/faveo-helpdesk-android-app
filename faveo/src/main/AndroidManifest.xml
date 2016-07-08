@@ -43,6 +43,7 @@
             android:windowSoftInputMode="adjustPan"></activity>
         <activity
             android:name="co.helpdesk.faveo.frontend.activities.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_main"
             android:screenOrientation="portrait"></activity>
 
@@ -53,6 +54,9 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="3d31c3fca25cb228d17bfa05856d933d97e90db1" />
     </application>
 
 </manifest>

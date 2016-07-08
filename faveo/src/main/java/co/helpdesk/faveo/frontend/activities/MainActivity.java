@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -12,10 +14,19 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.crashlytics.android.Crashlytics;
+import com.crashlytics.android.core.BuildConfig;
+import com.crashlytics.android.core.CrashlyticsCore;
+import com.crashlytics.android.core.CrashlyticsListener;
+
 import co.helpdesk.faveo.FaveoApplication;
+import co.helpdesk.faveo.Preference;
 import co.helpdesk.faveo.R;
 import co.helpdesk.faveo.frontend.drawers.FragmentDrawer;
 import co.helpdesk.faveo.frontend.fragments.About;
@@ -28,6 +39,7 @@ import co.helpdesk.faveo.frontend.fragments.tickets.MyTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.TrashTickets;
 import co.helpdesk.faveo.frontend.fragments.tickets.UnassignedTickets;
 import co.helpdesk.faveo.frontend.receivers.InternetReceiver;
+import io.fabric.sdk.android.Fabric;
 
 
 public class MainActivity extends AppCompatActivity implements FragmentDrawer.FragmentDrawerListener,
@@ -39,12 +51,22 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         About.OnFragmentInteractionListener,
         ClientList.OnFragmentInteractionListener,
         CreateTicket.OnFragmentInteractionListener,
-        Settings.OnFragmentInteractionListener, InternetReceiver.InternetReceiverListener {
+        Settings.OnFragmentInteractionListener,
+        InternetReceiver.InternetReceiverListener {
 
+    protected boolean doubleBackToExitPressedOnce = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        boolean enabledAnalytics = Preference.isCrashReport();
+        Log.d("Crash Preference", Preference.isCrashReport() + "");
+
+        if (enabledAnalytics) {
+            Fabric.with(this, new Crashlytics());
+            Log.d("Crash REport", "enabled");
+        }else  Log.d("Crash REport", "disabled");
+
         setContentView(R.layout.activity_main);
 
         String nextPageURL = getIntent().getStringExtra("nextPageURL");
@@ -86,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         mTitle.setText(title.toUpperCase());
 
         View mCreateTicket = toolbarTop.findViewById(R.id.button_create_ticket);
+
         switch (title) {
             case "Inbox":
             case "My tickets":
@@ -106,8 +129,8 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
                 Fragment fragment = new CreateTicket();
                 FragmentManager fragmentManager = getSupportFragmentManager();
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.replace(R.id.container_body, fragment, title);
-                fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.replace(R.id.container_body, fragment);
+                //fragmentTransaction.addToBackStack(null);
                 fragmentTransaction.commit();
             }
         });
@@ -176,4 +199,38 @@ public class MainActivity extends AppCompatActivity implements FragmentDrawer.Fr
         showSnack(isConnected);
     }
 
+    @Override
+    public void onBackPressed() {
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed();
+            return;
+        }
+
+        this.doubleBackToExitPressedOnce = true;
+        Snackbar.make(findViewById(android.R.id.content), "Press again to EXIT!", Snackbar.LENGTH_SHORT).show();
+
+        new Handler().postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                doubleBackToExitPressedOnce = false;
+            }
+        }, 2500);
+    }
+
+//    @Override
+//    public void onBackPressed() {
+//        Fragment fragment = this.getSupportFragmentManager().findFragmentByTag(getString(R.string.inbox_tickets));
+//        if (fragment == null) {
+//            fragment = new InboxTickets();
+//        }
+//        FragmentManager fragmentManager = this.getSupportFragmentManager();
+//        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//        fragmentTransaction.replace(R.id.container_body, fragment);
+//        // fragmentTransaction.addToBackStack(null);
+//        fragmentTransaction.commit();
+//        this.setActionBarTitle(getString(R.string.inbox_tickets));
+//
+//       // super.onBackPressed();
+//    }
 }

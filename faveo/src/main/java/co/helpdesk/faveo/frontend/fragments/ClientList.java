@@ -14,6 +14,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -38,6 +39,7 @@ public class ClientList extends Fragment implements View.OnClickListener {
 
     static String nextPageURL = "";
 
+    TextView tv;
     RecyclerView recyclerView;
 
     ClientOverviewAdapter clientOverviewAdapter;
@@ -94,6 +96,7 @@ public class ClientList extends Fragment implements View.OnClickListener {
                 Toast.makeText(getActivity(), "Oops! No internet", Toast.LENGTH_LONG).show();
 
             swipeRefresh = (SwipeRefreshLayout) rootView.findViewById(R.id.swipeRefresh);
+            swipeRefresh.setColorSchemeResources(R.color.faveo_blue);
             swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override
                 public void onRefresh() {
@@ -103,7 +106,8 @@ public class ClientList extends Fragment implements View.OnClickListener {
                         Toast.makeText(getActivity(), "Oops! No internet", Toast.LENGTH_LONG).show();
                 }
             });
-
+            tv = (TextView) rootView.findViewById(R.id.empty_view);
+            tv.setText("No Clients!");
         }
         ((MainActivity) getActivity()).setActionBarTitle("Client list");
         return rootView;
@@ -150,8 +154,9 @@ public class ClientList extends Fragment implements View.OnClickListener {
                 return;
             }
             if (result.equals("all done")) {
-                Toast.makeText(context, "All clients loaded", Toast.LENGTH_SHORT).show();
-                return;
+
+                Toast.makeText(context, "All Done!", Toast.LENGTH_SHORT).show();
+                //return;
             }
             recyclerView = (RecyclerView) rootView.findViewById(R.id.cardList);
             recyclerView.setHasFixedSize(false);
@@ -177,6 +182,9 @@ public class ClientList extends Fragment implements View.OnClickListener {
             });
             clientOverviewAdapter = new ClientOverviewAdapter(clientOverviewList);
             recyclerView.setAdapter(clientOverviewAdapter);
+            if (clientOverviewAdapter.getItemCount() == 0) {
+                tv.setVisibility(View.VISIBLE);
+            } else tv.setVisibility(View.GONE);
         }
     }
 
